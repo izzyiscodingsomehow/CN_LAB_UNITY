@@ -14,6 +14,9 @@ public class Launcher : MonoBehaviourPunCallbacks
     public TMP_InputField roomNameInput;
     public GameObject roomScreen;
     public TMP_Text roomNameText;
+    public GameObject roomBrowserScreen;
+    public RoomBehaviors roomButton;
+    private List<RoomBehaviors> allRoomButtons = new List<RoomBehaviors>();
     // Start is called before the first frame update
     void Start()
     {
@@ -80,5 +83,38 @@ public class Launcher : MonoBehaviourPunCallbacks
     public void quitButton()
     {
         Application.Quit();
+    }
+        public void OpenRoomBrowser()   
+    {
+        roomBrowserScreen.SetActive(true);
+    }
+
+    public void CloseRoomBrowser()
+    {
+        roomBrowserScreen.SetActive(false);
+    }
+
+    public override void OnRoomListUpdate(List<RoomInfo> roomList)
+    {
+        foreach (RoomBehaviors button in allRoomButtons)
+        {
+            Destroy(button.gameObject);
+        }
+
+        allRoomButtons.Clear();
+
+        roomButton.gameObject.SetActive(false);
+
+        for (int i = 0; i < roomList.Count; i++)
+        {
+            if (roomList[i].PlayerCount != roomList[i].MaxPlayers && !roomList[i].RemovedFromList)
+            {
+                RoomBehaviors newButton = Instantiate(roomButton, roomButton.transform.parent);
+                newButton.SetButtonDetails(roomList[i]);
+                newButton.gameObject.SetActive(true);
+
+                allRoomButtons.Add(newButton);
+            } 
+        }
     }
 }
