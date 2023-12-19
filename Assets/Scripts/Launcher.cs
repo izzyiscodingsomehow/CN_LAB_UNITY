@@ -7,6 +7,11 @@ using UnityEngine;
 
 public class Launcher : MonoBehaviourPunCallbacks
 {
+    public GameObject nameInputScreen;
+    public TMP_InputField nameInput;
+    private bool hasSetNick;
+
+    public GameObject startGameButton;
     public static Launcher instance;
     public GameObject loadingScreen;
     public GameObject createRoomScreen;
@@ -28,6 +33,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     }
     public override void OnConnectedToMaster()
     {
+        PhotonNetwork.AutomaticallySyncScene = true;
         loadingtext.text = "Connected, Joining Lobby...";
         PhotonNetwork.JoinLobby();
     }
@@ -35,10 +41,31 @@ public class Launcher : MonoBehaviourPunCallbacks
     {
         loadingtext.text = "Joined Lobby";
         loadingScreen.SetActive(false);
+        if (!hasSetNick)
+        {
+            nameInputScreen.SetActive(true);
+
+            if (PlayerPrefs.HasKey("PlayerName"))
+            {
+                nameInput.text = PlayerPrefs.GetString("PlayerName");
+            }
+        }
+        else
+        {
+            PhotonNetwork.NickName = PlayerPrefs.GetString("PlayerName");
+        }
     }
     public void openCreateRoom()
     {
         createRoomScreen.SetActive(true);
+        if (PhotonNetwork.IsMasterClient)
+        {
+            startGameButton.SetActive(true);
+        }
+        else
+        {
+            startGameButton.SetActive(false);
+        }
     }
     public override void OnCreateRoomFailed(short returnCode, string message)
     {
@@ -61,6 +88,27 @@ public class Launcher : MonoBehaviourPunCallbacks
         loadingtext.text = "Room Created";
         roomNameText.text = PhotonNetwork.CurrentRoom.Name;
         //PhotonNetwork.LoadLevel("Game");
+        if (PhotonNetwork.IsMasterClient)
+        {
+            startGameButton.SetActive(true);
+        }
+        else
+        {
+            startGameButton.SetActive(false);
+        }
+
+    }
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        TMP_Text newPlayerLabel = Instantiate(playerNameLabel, playerNameLabel.transform.parent);
+        newPlayerLabel.text = newPlayer.NickName;
+        newPlayerLabel.gameObject.SetActive(true);
+
+        playerList.Add(newPlayerLabel);
+    }
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        ListAllPlayers();
     }
     public void leaveRoom()
     {
@@ -115,6 +163,31 @@ public class Launcher : MonoBehaviourPunCallbacks
 
                 allRoomButtons.Add(newButton);
             } 
+        }
+    }
+    public void SetNickName()
+    {
+        if (string.IsNullOrEmpty(nameInput.text))
+        {
+            return;
+        }
+
+        PlayerPrefs.SetString("PlayerName", nameInput.text);
+
+        PhotonNetwork.NickName = nameInput.text;
+        nameInputScreen.SetActive(false);
+        hasSetNick = true;
+    }
+
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            startGameButton.SetActive(true);
+        }
+        else
+        {
+            startGameButton.SetActive(false);
         }
     }
 }
